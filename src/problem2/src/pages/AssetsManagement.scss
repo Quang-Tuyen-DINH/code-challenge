@@ -1,0 +1,23 @@
+.assets-management-container {
+  &__exchange-summary {
+
+    &__table {
+      &__body {
+        &__row {
+          &__first-col {
+            text-align: left;
+            padding: 0 10px 0 0;
+          }
+          &__second-col {
+            text-align: right;
+            font-weight: bold;
+          }
+        }
+      }
+    }
+    &__actions {
+      margin: 30px 0 0 0;
+
+    }
+  }
+}
