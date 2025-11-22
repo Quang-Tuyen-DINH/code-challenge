@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import AssetsSwap from '../components/AssetsSwap'
 import type { ExchangeSummary } from '../shared/types/exchange'
 import type { Asset } from '../shared/types/asset';
+import "./AssetsManagement.scss";
 
 function AssetsManagement() {
   const [assetsData, setAssetsData] = useState<Asset[]>([]);
@@ -30,39 +31,39 @@ function AssetsManagement() {
   }, []);
 
   return (
-    <main>
+    <main className='assets-management-container'>
       {!summaryExchange &&
-        <section>
+        <section className='assets-management-container__form'>
           {loading && <div>Loading asset prices…</div>}
-          {error && <div className='error'>Error loading prices: {error}</div>}
+          {error && <div className='error'>Error loading prices</div>}
           <AssetsSwap assetsData={assetsData} onExchange={setSummaryExchange} loading={loading} error={error} />
         </section>
       }
       {summaryExchange &&
-        <section>
-          <h3>Review exchange before making transaction</h3>
-          <table>
-            <tbody>
-              <tr>
-                <td>Send</td>
-                <td>{summaryExchange.sendAmount} {summaryExchange.sendAsset}</td>
+        <section className='assets-management-container__exchange-summary'>
+          <h3>Your transaction has been done!</h3>
+          <table className='assets-management-container__exchange-summary__table'>
+            <tbody className='assets-management-container__exchange-summary__table__body'>
+              <tr className='assets-management-container__exchange-summary__table__body__row'>
+                <td className='assets-management-container__exchange-summary__table__body__row__first-col'>Send</td>
+                <td className='assets-management-container__exchange-summary__table__body__row__second-col'>{summaryExchange.sendAmount} {summaryExchange.sendAsset}</td>
               </tr>
-              <tr>
-                <td>Receive</td>
-                <td>{summaryExchange.receiveAmount} {summaryExchange.receiveAsset}</td>
+              <tr className='assets-management-container__exchange-summary__table__body__row'>
+                <td className='assets-management-container__exchange-summary__table__body__row__first-col'>Receive</td>
+                <td className='assets-management-container__exchange-summary__table__body__row__second-col'>{summaryExchange.receiveAmount} {summaryExchange.receiveAsset}</td>
               </tr>
-              <tr>
-                <td>Approx USD (send)</td>
-                <td>${summaryExchange.approxUsdSendAmount.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
+              <tr className='assets-management-container__exchange-summary__table__body__row'>
+                <td className='assets-management-container__exchange-summary__table__body__row__first-col'>Approx USD ({summaryExchange.sendAsset})</td>
+                <td className='assets-management-container__exchange-summary__table__body__row__second-col'>${summaryExchange.approxUsdSendAmount.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
               </tr>
-              <tr>
-                <td>Approx USD (receive)</td>
-                <td>${summaryExchange.approxUsdReceiveAmount.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
+              <tr className='assets-management-container__exchange-summary__table__body__row'>
+                <td className='assets-management-container__exchange-summary__table__body__row__first-col'>Approx USD ({summaryExchange.receiveAsset})</td>
+                <td className='assets-management-container__exchange-summary__table__body__row__second-col'>${summaryExchange.approxUsdReceiveAmount.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
               </tr>
             </tbody>
           </table>
-          <div>
-            <button>Make transaction</button>
+          <div className='assets-management-container__exchange-summary__actions'>
+            <button onClick={() => setSummaryExchange(null)}>Make another transaction</button>
           </div>
         </section>
       }

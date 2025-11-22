@@ -7,78 +7,90 @@ import { getLatestPrices, receivedFromSend as calcReceivedFromSend, sendFromRece
 
 type AssetsSwapProps = {
   assetsData: Asset[];
-  loading?: boolean
-  error?: string | null
+  loading?: boolean;
+  error?: string | null;
   onExchange?: (summary: ExchangeSummary) => void;
 }
     
 type AssetSelectDisplayProps = {
-  value: string
-  options: string[]
-  onChange: (val: string) => void
+  value: string;
+  options: string[];
+  onChange: (val: string) => void;
 }
 
 type SwapAmountInputProps = {
-  label: string
-  value: number | ""
-  onChange: (val: number | "") => void
-  // displayed approximation (formatted string) — keep state numeric in form
-  approxUsd?: string | number
-  placeholder?: string
-  min?: string
-  step?: string
+  label: string;
+  value: number | "";
+  onChange: (val: number | "") => void;
+  approxUsd?: string | number;
+  placeholder?: string;
+  min?: string;
+  step?: string;
 }
-// ExchangeSummary moved to shared types
+
+const iconFiles = import.meta.glob('../assets/icons/tokens/*.svg', { eager: true, as: 'url' }) as Record<string, string> | Record<string, unknown>;
+const ICONS: Record<string, string> = {};
+Object.entries(iconFiles).forEach(([path, url]) => {
+  const name = path.split('/').pop()?.replace('.svg', '').toLowerCase() ?? '';
+  if (typeof url === 'string' && name) ICONS[name] = url;
+});
+
+const getIconSrc = (value?: string) => {
+  if (!value) return '';
+  return ICONS[value.toLowerCase()] ?? '';
+}
+
+const AssetSelectDisplay = React.memo(({ value, options, onChange }: AssetSelectDisplayProps) => {
+  return (
+      <div className='swap-row__asset-select-container'>
+        <div className='asset-select-chip'>
+          <img className='asset-icon' src={getIconSrc(value)} alt={`${value} icon`} />
+        </div>
+        <select
+          name='asset-select-dropdown'
+          className='asset-select-dropdown'
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          {/* Sorry I am over 30 and I don't have enough time to customize the options' styles :D */}
+          {options.map((opt) => (
+            <option key={`'asset-select-option-${opt}`} className='asset-select-option' value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
+  )
+})
+
+const SwapAmountInput = React.memo(({ label, value, onChange, approxUsd, placeholder = '0.0', min, step }: SwapAmountInputProps) => {
+  return (
+    <div className='swap-row__input-container'>
+      <label className='swap-label'>
+        <div className='swap-label__value'>{label}</div>
+        <input
+          className='swap-amount-input'
+          name='swap-amount-input'
+          type='number'
+          inputMode='decimal'
+          value={value === "" ? "" : String(value)}
+          onChange={(e) => {
+            const v = e.target.value
+            const parsed = v === '' ? '' : Number(v)
+            onChange(parsed)
+          }}
+          placeholder={placeholder}
+          min={min}
+          step={step}
+        />
+        <div className='swap-approx-usd'>{approxUsd ?? ''}</div>
+      </label>
+    </div>
+  )
+})
 
 function AssetsSwap({
   assetsData,
   onExchange
 }: AssetsSwapProps) {
-
-  // Removed unused local callback type
-
-  const AssetSelectDisplay = React.memo(({ value, options, onChange }: AssetSelectDisplayProps) => {
-    return (
-      <div className='asset-select-display'>
-        <select
-          className='asset-select'
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          {options.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-        <div className='asset-chip'>{value}</div>
-      </div>
-    )
-  })
-
-  const SwapAmountInput = React.memo(({ label, value, onChange, approxUsd, placeholder = '0.0', min, step }: SwapAmountInputProps) => {
-    return (
-      <div className='swap-row__left'>
-        <label className='swap-label'>
-          {label}
-          <input
-            className='swap-amount-input'
-            type='number'
-            inputMode='decimal'
-            value={value === "" ? "" : String(value)}
-            onChange={(e) => {
-              const v = e.target.value
-              const parsed = v === '' ? '' : Number(v)
-              onChange(parsed)
-            }}
-            placeholder={placeholder}
-            min={min}
-            step={step}
-          />
-          <div className='swap-approx-usd'>{approxUsd ?? ''}</div>
-        </label>
-      </div>
-    )
-  })
-
   const { watch, setValue, getValues } = useForm<{
     sendAmount: number | "";
     receiveAmount: number | "";
@@ -93,30 +105,30 @@ function AssetsSwap({
     }
   })
 
-  const sendAmount = watch('sendAmount')
-  const receiveAmount = watch('receiveAmount')
-  const sendAsset = watch('sendAsset')
-  const receiveAsset = watch('receiveAsset')
+  const sendAmount = watch('sendAmount');
+  const receiveAmount = watch('receiveAmount');
+  const sendAsset = watch('sendAsset');
+  const receiveAsset = watch('receiveAsset');
 
-  const lastChanged = useRef<'send'|'receive'|null>(null)
+  const lastChanged = useRef<'send'|'receive'|null>(null);
 
   const handleChangeSendAmount = (parsed: number | "") => {
-    lastChanged.current = 'send'
-    setValue('sendAmount', parsed)
-    debouncedCalcReceive(parsed, getValues('sendAsset') || sendAsset, getValues('receiveAsset') || receiveAsset)
+    lastChanged.current = 'send';
+    setValue('sendAmount', parsed);
+    debouncedCalcReceive(parsed, getValues('sendAsset') || sendAsset, getValues('receiveAsset') || receiveAsset);
   }
 
   const handleChangeReceiveAmount = (parsed: number | "") => {
-    lastChanged.current = 'receive'
-    setValue('receiveAmount', parsed)
-    debouncedCalcSend(parsed, getValues('sendAsset') || sendAsset, getValues('receiveAsset') || receiveAsset)
+    lastChanged.current = 'receive';
+    setValue('receiveAmount', parsed);
+    debouncedCalcSend(parsed, getValues('sendAsset') || sendAsset, getValues('receiveAsset') || receiveAsset);
   }
 
   const approxUsd = (amount: number | "", asset: string) => {
-    if (amount === "" || !asset) return 0
-    const p = prices[asset]
-    if (!p) return 0
-    return Number((Number(amount) * p))
+    if (amount === "" || !asset) return 0;
+    const p = prices[asset];
+    if (!p) return 0;
+    return Number((Number(amount) * p));
   }
 
   const formatUsd = (v: number | "") => {
@@ -139,30 +151,26 @@ function AssetsSwap({
   }
 
   const prices = useMemo(() => {
-    return getLatestPrices(assetsData)
+    return getLatestPrices(assetsData);
   }, [assetsData]);
   const options = useMemo(() => Array.from(new Set(assetsData.map((d) => d.currency))), [assetsData]);
 
   useEffect(() => {
     if (options.length === 0) return;
-    // ensure there are sane defaults when assetsData arrives
     if (!sendAsset) {
-      setValue('sendAsset', options[0])
+      setValue('sendAsset', options[0]);
     }
 
     if (!receiveAsset) {
-      setValue('receiveAsset', options[1] ?? options[0])
+      setValue('receiveAsset', options[1] ?? options[0]);
     }
 
-    // if there's a sendAmount already (e.g. user typed before assets arrived), recalc
     if (sendAmount !== "") {
       const rec = calcReceivedFromSend(sendAmount, sendAsset || options[0], receiveAsset || (options[1] ?? options[0]), prices)
-      if (rec !== "" && Number.isFinite(rec as number)) setValue('receiveAmount', rec)
+      if (rec !== "" && Number.isFinite(rec as number)) setValue('receiveAmount', rec);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options, prices])
 
-  // debounce helpers
   const debouncedRef = useRef<{ t?: number | null }>({ t: null })
   const debouncedCalcReceive = useCallback((amount: number | "", from: string, to: string) => {
     if (debouncedRef.current.t) window.clearTimeout(debouncedRef.current.t)
@@ -193,7 +201,7 @@ function AssetsSwap({
 
   return (
     <div className="assets-swap-container">
-      <main className='swap-input-container'>
+      <main className='swap-inputs-container'>
         {/* You send block */}
         <section className='swap-row send-row'>
           <SwapAmountInput
@@ -205,17 +213,15 @@ function AssetsSwap({
             min='0'
             step='any'
           />
-          <div className='swap-row__right'>
-            <AssetSelectDisplay
-              value={sendAsset}
-              options={options}
-              onChange={(val) => {
-                setValue('sendAsset', val)
-                const rec = calcReceivedFromSend(sendAmount, val, receiveAsset, prices)
-                if (rec !== "" && Number.isFinite(rec as number)) setValue('receiveAmount', rec)
-              }}
-            />
-          </div>
+          <AssetSelectDisplay
+            value={sendAsset}
+            options={options}
+            onChange={(val) => {
+              setValue('sendAsset', val);
+              const rec = calcReceivedFromSend(sendAmount, val, receiveAsset, prices);
+              if (rec !== "" && Number.isFinite(rec as number)) setValue('receiveAmount', rec);
+            }}
+          />
         </section>
 
         {/* You receive block */}
@@ -232,9 +238,9 @@ function AssetsSwap({
               value={receiveAsset}
               options={options}
               onChange={(val) => {
-                setValue('receiveAsset', val)
-                const rec = calcReceivedFromSend(sendAmount, sendAsset, val, prices)
-                if (rec !== "" && Number.isFinite(rec as number)) setValue('receiveAmount', rec)
+                setValue('receiveAsset', val);
+                const rec = calcReceivedFromSend(sendAmount, sendAsset, val, prices);
+                if (rec !== "" && Number.isFinite(rec as number)) setValue('receiveAmount', rec);
               }}
             />
           </div>
