@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
+import { useForm } from 'react-hook-form'
 import "./AssetsSwap.scss"
 import type { Asset } from '../shared/types/asset'
 
@@ -81,16 +82,39 @@ function AssetsSwap({
     )
   }
 
+  const { watch, setValue, getValues } = useForm<{
+    sendAmount: number | "";
+    receiveAmount: number | "";
+    sendAsset: string;
+    receiveAsset: string
+  }>({
+    defaultValues: {
+      sendAmount: "",
+      receiveAmount: "",
+      sendAsset: "",
+      receiveAsset: "",
+    }
+  })
+
+  const sendAmount = watch('sendAmount')
+  const receiveAmount = watch('receiveAmount')
+  const sendAsset = watch('sendAsset')
+  const receiveAsset = watch('receiveAsset')
+
+  const lastChanged = useRef<'send'|'receive'|null>(null)
+
   const handleChangeSendAmount = (parsed: number | "") => {
-    setSendAmount(parsed);
-    const rec = receivedFromSend(parsed, sendAsset, receiveAsset);
-    if (rec !== "" && Number.isFinite(rec as number)) setReceiveAmount(rec);
+    lastChanged.current = 'send'
+    setValue('sendAmount', parsed)
+    const rec = receivedFromSend(parsed, getValues('sendAsset') || sendAsset, getValues('receiveAsset') || receiveAsset)
+    if (rec !== "" && Number.isFinite(rec as number)) setValue('receiveAmount', rec)
   }
 
   const handleChangeReceiveAmount = (parsed: number | "") => {
-    setReceiveAmount(parsed);
-    const send = sendFromReceived(parsed, sendAsset, receiveAsset);
-    if (send !== "" && Number.isFinite(send as number)) setSendAmount(send);
+    lastChanged.current = 'receive'
+    setValue('receiveAmount', parsed)
+    const send = sendFromReceived(parsed, getValues('sendAsset') || sendAsset, getValues('receiveAsset') || receiveAsset)
+    if (send !== "" && Number.isFinite(send as number)) setValue('sendAmount', send)
   }
 
   const approxUsd = (amount: number | "", asset: string) => {
@@ -120,23 +144,19 @@ function AssetsSwap({
     return map;
   }, [assetsData]);
   const options = useMemo(() => Array.from(new Set(assetsData.map((d) => d.currency))), [assetsData]);
-  const [sendAmount, setSendAmount] = useState<number | "">("");
-  const [receiveAmount, setReceiveAmount] = useState<number | "">("");
-  const [sendAsset, setSendAsset] = useState<string>(options[0] ?? "");
-  const [receiveAsset, setReceiveAsset] = useState<string>(options[1] ?? "");
 
   useEffect(() => {
     if (options.length === 0) return;
     if (!sendAsset) {
-      setSendAsset(options[0])
+      setValue('sendAsset', options[0])
     }
 
     if (!receiveAsset) {
-      setReceiveAsset(options[1] ?? options[0])
+      setValue('receiveAsset', options[1] ?? options[0])
     }
     if (sendAmount !== "") {
       const rec = receivedFromSend(sendAmount, sendAsset || options[0], receiveAsset || (options[1] ?? options[0]))
-      if (rec !== "" && Number.isFinite(rec as number)) setReceiveAmount(rec)
+      if (rec !== "" && Number.isFinite(rec as number)) setValue('receiveAmount', rec)
     }
   }, [options])
 
@@ -177,9 +197,9 @@ function AssetsSwap({
               value={sendAsset}
               options={options}
               onChange={(val) => {
-                setSendAsset(val)
+                setValue('sendAsset', val)
                 const rec = receivedFromSend(sendAmount, val, receiveAsset)
-                if (rec !== "" && Number.isFinite(rec as number)) setReceiveAmount(rec)
+                if (rec !== "" && Number.isFinite(rec as number)) setValue('receiveAmount', rec)
               }}
             />
           </div>
@@ -199,9 +219,9 @@ function AssetsSwap({
               value={receiveAsset}
               options={options}
               onChange={(val) => {
-                setReceiveAsset(val)
+                setValue('receiveAsset', val)
                 const rec = receivedFromSend(sendAmount, sendAsset, val)
-                if (rec !== "" && Number.isFinite(rec as number)) setReceiveAmount(rec)
+                if (rec !== "" && Number.isFinite(rec as number)) setValue('receiveAmount', rec)
               }}
             />
           </div>

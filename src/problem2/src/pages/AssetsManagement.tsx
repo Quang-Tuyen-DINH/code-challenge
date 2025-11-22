@@ -22,12 +22,14 @@ function AssetsManagement() {
 
   return (
     <main>
-      <section>
-        <AssetsSwap assetsData={assetsData} onExchange={setSummaryExchange} />
-      </section>
+      {!summaryExchange &&
+        <section>
+          <AssetsSwap assetsData={assetsData} onExchange={setSummaryExchange} />
+        </section>
+      }
       {summaryExchange &&
         <section>
-          <h3>Review exchange before transaction</h3>
+          <h3>Review exchange before making transaction</h3>
           <table>
             <tbody>
               <tr>
@@ -48,6 +50,9 @@ function AssetsManagement() {
               </tr>
             </tbody>
           </table>
+          <div>
+            <button>Make transaction</button>
+          </div>
         </section>
       }
     </main>
