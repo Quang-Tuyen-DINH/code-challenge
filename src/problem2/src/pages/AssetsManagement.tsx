@@ -1,19 +1,28 @@
 import { useEffect, useState } from 'react'
-import AssetsSwap, { type ExchangeSummary } from '../components/AssetsSwap'
+import AssetsSwap from '../components/AssetsSwap'
+import type { ExchangeSummary } from '../shared/types/exchange'
 import type { Asset } from '../shared/types/asset';
 
 function AssetsManagement() {
   const [assetsData, setAssetsData] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
   const [summaryExchange, setSummaryExchange] = useState<ExchangeSummary | null>(null);
   
   useEffect(() => {
     const fetchAssets = async () => {
+      setLoading(true)
+      setError(null)
       try {
         const response = await fetch("https://interview.switcheo.com/prices.json");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
         const assets = await response.json();
         setAssetsData(assets);
-      } catch (error) {
-        console.error(error);
+      } catch (err: any) {
+        console.error(err);
+        setError(err?.message ?? String(err))
+      } finally {
+        setLoading(false)
       }
     };
 
@@ -24,7 +33,9 @@ function AssetsManagement() {
     <main>
       {!summaryExchange &&
         <section>
-          <AssetsSwap assetsData={assetsData} onExchange={setSummaryExchange} />
+          {loading && <div>Loading asset prices…</div>}
+          {error && <div className='error'>Error loading prices: {error}</div>}
+          <AssetsSwap assetsData={assetsData} onExchange={setSummaryExchange} loading={loading} error={error} />
         </section>
       }
       {summaryExchange &&
